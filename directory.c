@@ -36,25 +36,29 @@ void dir_insert(Directory* dir, Directory* sub_dir){
 /**
 * \authors Sandy Hoffmann and Leonardo de Souza Fiamoncini.
 * \since 25/03/2023.
-* \brief Function that prints (Preorder) the tree directory.
-* \param dir The root directory where the print starts.
-* \param option Represents an integer number. If the option is 1, a command similar to 'ls' will be executed. If the option is 2, all the directories hierarchy will be printed.
+* \brief Function that executes a command similar to 'ls'.
+* \param dir The directory where the command will be executed.
 **/
-void print_dir(Directory* dir, int option){
-    if (option == 1){
-        Directory *d = dir->first;
-        while (d != NULL){
-            printf("\n%s", d->name);
-            d = d->next;
-        }
+void ls_dir(Directory* dir){
+    Directory *d = dir->first;
+    while (d != NULL){
+        printf("\n%s", d->name);
+        d = d->next;
     }
-    else if (option == 2){
-        printf("\n%s", dir->name);
-        Directory *d = dir->first;
-        while (d != NULL){
-            print_dir(d, 2);
-            d = d->next;
-        }
+}
+
+/**
+* \authors Sandy Hoffmann and Leonardo de Souza Fiamoncini.
+* \since 25/03/2023.
+* \brief Function that prints (in Preorder) all the tree's hierarchy of directories.
+* \param dir The root directory where the print starts.
+**/
+void print_root(Directory* dir){
+    printf("\n%s", dir->name);
+    Directory *d = dir->first;
+    while (d != NULL){
+        print_dir(d, 2);
+        d = d->next;
     }
 }
 

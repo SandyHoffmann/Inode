@@ -10,15 +10,15 @@
 
 int fdHd;
 
-void abrirHd();
-void fecharHd();
-char *lerBloco(int numBloco);
+void open_hd();
+void close_hd();
+char *read_block(int block_num);
 
 void main(){
     struct SuperBlock block = create_super_block(4096, 64, 1);
     void *buffer = malloc(block.block_size);
     // memcpy(buffer, &block, sizeof(struct SuperBlock));
-    abrirHd();
+    open_hd();
 
     struct SuperBlock ReadBlock;
 
@@ -37,10 +37,10 @@ void main(){
 
     free(buffer);
 
-    fecharHd();
+    close_hd();
 }
 
-void abrirHd()
+void open_hd()
 {
     printf("Abrindo HD...");
     if ((fdHd = open("bla.hd", O_RDWR)) == -1)
@@ -50,12 +50,12 @@ void abrirHd()
     }
 }
 
-void fecharHd()
+void close_hd()
 {
     close(fdHd);
 }
 
-char *lerBloco(int numBloco)
+char *read_block(int block_num)
 {
 }
 
