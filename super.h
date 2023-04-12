@@ -1,11 +1,24 @@
+/**
+* \authors Sandy Hoffmann and Leonardo de Souza Fiamoncini.
+* \since 25/03/2023.
+**/
+
 #ifndef _super_h
 #define _super_h
+
 #include <stdio.h>
 #include <stdlib.h>
-
 #include <math.h>
+#include <gmp.h>
+
+#define ROUND(n) ((int)(n+1))
 
 
+/**
+* \authors Sandy Hoffmann and Leonardo de Souza Fiamoncini.
+* \since 25/03/2023.
+* \brief Data structure used to store metadata about the file system.
+**/
 struct SuperBlock{
     long int magic;
     int block_size;
@@ -25,4 +38,5 @@ struct SuperBlock{
 
 struct SuperBlock data_calculation_hd(int size_block, int size_inode, int size_hd_gb);
 struct SuperBlock create_super_block(int size_block, int size_inode, int size_hd_gb);
+
 #endif

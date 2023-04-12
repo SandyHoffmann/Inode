@@ -16,16 +16,16 @@
 * \brief Struct representing a directory hierarchy. Using the data structure known as multiway trees as a basis. 
 **/
 typedef struct directory {
-	char name[60];
-	int inode;
-	struct directory *first;
-	struct directory *next;
+	char name[60]; // Name of the directory.
+	int inode; // Inode number of the directory.
+	struct directory *first; // Pointer to the first child directory.
+	struct directory *next; // Pointer to the next sibling directory.
 } Directory;
 
 Directory* create_dir(char* _name, int _inode);
 void dir_insert(Directory* dir, Directory* sub_dir);
 void ls_dir(Directory* dir);
-void print_root(Directory* dir);
+void print_tree(Directory* dir);
 int dir_pertain(Directory* dir, char* name);
 void release_dir(Directory* dir);
 int number_of_leafs(Directory* dir);

@@ -1,12 +1,23 @@
+/**
+* \authors Sandy Hoffmann and Leonardo de Souza Fiamoncini.
+* \since 25/03/2023.
+**/
+
 #include "super.h"
-#include <gmp.h>
 
-#define ROUND(n) ((int)(n+1))
-
-
+/**
+* \authors Sandy Hoffmann and Leonardo de Souza Fiamoncini.
+* \since 25/03/2023.
+* \brief Function that creates the superblock for the file system based on the given parameters. The create superblock is returned.
+* \param size_block The size of each block in bytes.
+* \param size_inode The size of each inode in bytes.
+* \param size_hd_gb The size of the hard drive in gigabytes.
+**/
 struct SuperBlock create_super_block(int size_block, int size_inode, int size_hd_gb){
+    // * Calculate the necessary data to create the superblock.
     struct SuperBlock super_block = data_calculation_hd(size_block, size_inode, size_hd_gb);
-    // * Show the superblock
+
+    // * Show the created superblock.
     printf("Superblock created: \n");
     printf("Magic: %ld \n", super_block.magic);
     printf("Block size: %d \n", super_block.block_size);
@@ -24,23 +35,33 @@ struct SuperBlock create_super_block(int size_block, int size_inode, int size_hd
     return super_block;
 }
 
+/**
+* \authors Sandy Hoffmann and Leonardo de Souza Fiamoncini.
+* \since 25/03/2023.
+* \brief Function that calculates and returns the data necessary to create the superblock, since we'll be using them a lot.
+* \param size_block The size of each block in bytes.
+* \param size_inode The size of each inode in bytes.
+* \param size_hd_gb The size of the hard drive in gigabytes.
+**/
 struct SuperBlock data_calculation_hd(int size_block, int size_inode, int size_hd_gb){
-    // * Reserved block for superblock
+    // * Calculate the number of reserved blocks for the superblock.
     int reserved_block_superblock = 1;
 
-    // * Calculate the number of data in inode
+    // * Calculate the number of data blocks in each inode.
     int number_data_in_inode = ROUND(size_block/ sizeof(long int));
 
-    // * Calculate the number of data in inode (doesn't considering the size of the structure inode)
+    // * Calculate the size of each inode.
     long int direct_inode_only = 6 * size_block;
     long int direct_inode_plus_1ind = direct_inode_only + number_data_in_inode * size_block ;
     long int direct_inode_plus_2ind = direct_inode_plus_1ind + pow(number_data_in_inode, 2) * size_block;
     long int direct_inode_plus_3ind = direct_inode_plus_2ind + pow(number_data_in_inode, 3) * size_block;
 
+    // * Print the inode data calculations.
     printf("Number of data in inode: %d bytes\n", number_data_in_inode);
     printf("Direct inode only: %ld bytes\n", direct_inode_only);
     printf("Direct inode plus 1 indirect: %ld bytes\n", direct_inode_plus_1ind);
     printf("Direct inode plus 2 indirect: %ld bytes\n", direct_inode_plus_2ind);
+    printf("Direct inode plus 3 indirect: %ld bytes\n",
     printf("Direct inode plus 3 indirect: %ld bytes\n", direct_inode_plus_3ind);
 
     printf("Direct inode plus 1 indirect: %ld gb\n", direct_inode_plus_1ind/(1024*1024*1024));
@@ -117,4 +138,3 @@ struct SuperBlock data_calculation_hd(int size_block, int size_inode, int size_h
 
     return super_block;
 }
-
