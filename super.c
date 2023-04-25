@@ -5,6 +5,11 @@
 
 #include "super.h"
 
+#define ROUND(n) ((int)(n+1))
+
+// ? TODO: Bitmap of data needs to come with the blocks of bitmaps and directory marked as used
+// ? TODO: The inode directory needs to be created
+
 /**
 * \authors Sandy Hoffmann and Leonardo de Souza Fiamoncini.
 * \since 25/03/2023.
@@ -83,25 +88,19 @@ struct SuperBlock data_calculation_hd(int size_block, int size_inode, int size_h
     // * Calculate the reserved block total number that will be reserved for inode sector
 
     long int number_inode_per_block = ROUND(size_block/size_inode);
-    long int number_block_need_for_inode = ROUND(number_inodes/number_inode_per_block);
+    
+    // * bitmap for inode = number_block_need_for_inode/number_inode_per_block
+    // * TOTAL INODE = 258111 (258111/8 = 32264 bytes) = 32264 bytes
+
+    long int number_block_need_for_inode = ROUND(number_inodes/8);
 
     printf("Number of inode per block: %ld inodes \n", number_inode_per_block);
     printf("Number of block need for inode: %ld blocks \n", number_block_need_for_inode);
 
-    long int sector_size_reserved_for_inode = number_block_need_for_inode * size_block;
 
-    printf("Sector size reserved for inode: %ld bytes \n", sector_size_reserved_for_inode);
-    printf("Sector size reserved for inode: %ld mb \n", sector_size_reserved_for_inode/(1024*1024));
-    
-    // * bitmap for inode = number_block_need_for_inode/number_inode_per_block
+    // * bitmap for data = (size_hb_bytes) / size_block
 
-    long int number_block_for_inode = ROUND(number_block_need_for_inode/number_inode_per_block);
-
-    printf("Number of bitmaps for inode (bitmap): %ld bits \n", number_block_for_inode);
-
-    // * bitmap for data = (size_hb_bytes - sector_size_reserved_for_inode) / size_block
-
-    long int number_block_for_data = (size_hb_bytes - sector_size_reserved_for_inode) / size_block;
+    long int number_block_for_data = ROUND((size_hb_bytes / size_block)/8);
 
     printf("Number of bitmaps for data (bitmap): %ld bits \n", number_block_for_data);
 
@@ -118,7 +117,7 @@ struct SuperBlock data_calculation_hd(int size_block, int size_inode, int size_h
     // * Calculate the reserved block total number that will be reserved for data sector
     int reserved_sector = reserved_block_superblock * size_block;
     int block_data_start = reserved_sector + number_block_need_for_inode + 1;
-    int inode_start = block_data_start + number_block_for_data + 1;
+    int inode_start = block_data_start + ROUND(number_block_for_data/8) + 1;
     long int inode_directory_start = inode_start + (number_inodes * size_inode) + 1;
     long int data_start = inode_directory_start + size_inode + 1;
     struct SuperBlock super_block = {

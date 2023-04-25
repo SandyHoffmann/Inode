@@ -19,11 +19,11 @@ Directory* create_dir(char* _name, int _inode){
     strcpy(dir->name, _name);
     // Set the inode number of the directory
     dir->inode = _inode;
-    // Set the first child of the directory to NULL
-    dir->first = NULL;
-    // Set the next sibling of the directory to NULL
-    dir->next = NULL;
-    // Return the pointer to the created directory
+    // Set the first child of the directory to 0
+    dir->first_int = 0;
+    // Set the next sibling of the directory to 0
+    dir->next_int = 0;
+    // Return the created directory
     return dir;
 }
 
