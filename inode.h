@@ -5,20 +5,6 @@
 #include <stdlib.h>
 #include <time.h>
 
-
-/**
-* \authors Sandy Hoffmann and Leonardo de Souza Fiamoncini.
-* \since 25/03/2023.
-* \brief This structure defines the inode itself, which is a data structure used in some file systems to represent a file or directory. It contains a pointer to a "HeadInode" structure (more on that later), an array of 6 integers representing the addresses of direct data blocks, and 3 pointers to "Indirect" structures, which are used to address additional data blocks in the case where the direct data blocks are not sufficient. 
-**/
-struct Inode{
-	struct HeadInode * head;
-    int direct_data[6];
-	struct Indirect *indirect1;
-	struct Indirect *indirect2;
-	struct Indirect *indirect3;
-};
-
 /**
 * \authors Sandy Hoffmann and Leonardo de Souza Fiamoncini.
 * \since 25/03/2023.
@@ -32,6 +18,43 @@ enum FileType {
     CHARACTER_DEVICE = 5,
     PIPE = 6
 };
+
+
+/**
+* \authors Sandy Hoffmann and Leonardo de Souza Fiamoncini.
+* \since 25/03/2023.
+* \brief This structure defines the inode itself, which is a data structure used in some file systems to represent a file or directory. It contains a pointer to a "HeadInode" structure (more on that later), an array of 6 integers representing the addresses of direct data blocks, and 3 pointers to "Indirect" structures, which are used to address additional data blocks in the case where the direct data blocks are not sufficient. 
+* \update Struct with pointers to others structures cannot be find in the file system.
+* \ - Head elements will become attributes of the inode.
+* \ - Indirect elements will become addresses of data blocks.
+**/
+
+// ? indirects content can be stored at same data block (to save space)
+// * If we are about to store the inode in disk, use the int to the data address
+// * else, use the structure (to manipulate the data)
+
+// 1 - read from hd - inode {..., indirect1: Indirect{7, Indirect{8, Indirect{9, NULL}}}
+// 2 - write in hd - inode {..., indirect1: 7, indirect2: 8, indirect3: 9}
+struct Inode{
+    int file_size;
+    enum FileType file_type;
+    time_t creation_time;
+    time_t modify_time;
+    int direct_data[6];
+    union indirect1{
+		unsigned long int indirect1;
+		struct Indirect *indirect1_struct;
+	} indirect1;
+    union indirect2{
+		unsigned long int indirect2;
+		struct Indirect *indirect2_struct;
+	} indirect2;
+    union indirect3{
+		unsigned long int indirect3;
+		struct Indirect *indirect3_struct;
+	} indirect3;
+};
+
 
 /**
 * \authors Sandy Hoffmann and Leonardo de Souza Fiamoncini.
@@ -54,8 +77,10 @@ struct Indirect{
 	union data{
 		unsigned long int node;
 		struct Indirect *indirect;
-	};
+	} data;
 	struct Indirect *next;
 };
+
+struct Inode *create_inode(char *content, int file_type);
 
 #endif
