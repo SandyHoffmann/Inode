@@ -57,7 +57,7 @@ Directory* returnDirPhysicalLocation(int fdHd, struct SuperBlock ReadBlock, long
  * \brief Function that allocates a directory in memory, creating the structure based on the absolute path.
  * \param _name The directory's path, starting at /, last word will be taken as folder path.
  **/
-void allocate_dir_v2(int fdHd, struct SuperBlock ReadBlock, char *dir_name){
+void allocate_dir_v2(int fdHd, struct SuperBlock ReadBlock, char *dir_name, char *file_name){
     // * STEP 1 - Split the path into the directory name and the path itself.
     // * STEP 2 - Keep the reference to the father directory.
     // * STEP 3 - If father does not have first, then allocate the directory in the first.
@@ -185,7 +185,10 @@ void allocate_dir_v2(int fdHd, struct SuperBlock ReadBlock, char *dir_name){
         
         // ? FIXED FILE TYPE, ALLOCATING STATIC TXT
         long int *indirects = (long int *)malloc(4 * sizeof(long int));
-        indirects = allocate_data(fdHd, ReadBlock, "inputTest.txt");
+        if (strlen(file_name) > 1){
+            indirects = allocate_data(fdHd, ReadBlock, file_name);
+
+        }
 
         // * Allocating Inode
 
@@ -215,7 +218,6 @@ void allocate_dir_v2(int fdHd, struct SuperBlock ReadBlock, char *dir_name){
  * \brief Function that finds a directory in memory, based on the folder name and the father's address
  * \param father_address address of the father directory, if is the root, it will be 0.
  * \param dir_name The directory's name.
- * \status Deprecated.
  **/
 
 // "/home/etc"
@@ -369,9 +371,6 @@ long int * allocate_data(int fdHd, struct SuperBlock ReadBlock, char *data){
     long int total_blocks_read = 0;
     // * Counter to run through the indirect pointers
     long int indirect_counter = 0;
-    // ! test flag
-    int test = 0;
-    // ! Funcao allocate first indirect deve ser reformulada
 
     int reading_data = read(text_file, buffer_data, ReadBlock.block_size);
 
@@ -400,14 +399,12 @@ long int * allocate_data(int fdHd, struct SuperBlock ReadBlock, char *data){
         } else {
             indirect_counter++;
         }
-        // printf("Block address: %ld \n", block_address);
         write_block(fdHd, ReadBlock, buffer_data, block_address_allocate);
         if (indirect_counter == 1) {
             printf("Block address <20: %ld \n", block_address_allocate);
             printf("Active indirect: %ld \n", active_indirect);
             printf("Physical address: %ld \n", physicalAddress(ReadBlock.block_size, active_indirect)+(indirect_counter*sizeof(long int)));
         }
-        // block_address = 255;
         long int physical_offset = physicalAddress(ReadBlock.block_size, active_indirect)+(indirect_counter*sizeof(long int));
         if (indirect_counter < 10){
             printf("Physical offset: %ld \n", physical_offset);
@@ -417,12 +414,9 @@ long int * allocate_data(int fdHd, struct SuperBlock ReadBlock, char *data){
         if (offset == -1) {
             printf("Error using lseek\n");
         }
-        // printf("Posicao atual: %d", SEEK_CUR);
         long int *block_address_copy = (long int *)malloc(sizeof(long int));
         block_address_copy = &block_address_allocate;
-        // printf("Block address copy: %ld \n", *block_address_copy);
         write(fdHd, block_address_copy, sizeof(long int));
-        // sleep(1);
 
         long int *block_address_read = (long int *)malloc(sizeof(long int));
         lseek(fdHd, physical_offset, SEEK_SET);
@@ -431,17 +425,6 @@ long int * allocate_data(int fdHd, struct SuperBlock ReadBlock, char *data){
         memset(buffer_data, 0, ReadBlock.block_size);
         reading_data = read(text_file, buffer_data, ReadBlock.block_size);
 
-        // printf("Block address read: %ld \n", *block_address_read);
-        // if (bytes_written == sizeof(long int)) {
-        //     // printf("Wrote %ld bytes to file\n", bytes_written);
-        //     // printf("Position in file is now %ld\n", physicalAddress(ReadBlock.block_size, (active_indirect+(indirect_counter*sizeof(long int)))));
-
-        // } else if (bytes_written == -1) {
-        //     printf("Error writing to file\n");
-        // } else {
-        //     printf("Unexpected number of bytes written: %ld\n", bytes_written);
-        // }
-        // printf("Block address: %ld \n", block_address);
         total_blocks_read++;
         
     }
@@ -487,30 +470,23 @@ void read_data(int fdHd, struct SuperBlock ReadBlock, struct Inode *inode){
     while (total_blocks_read < total_size_block){
         if (active_indirect == 0){
             active_indirect = inode->indirect1;
-            // long int *indirectArray = (long int *)malloc(ReadBlock.block_size);
-            // * Initializing the array with 0
-            // memset(indirectArray, 0, ReadBlock.block_size);
             for (int i = 0; i < total_data_indirects_1; i++){
                 long int numero = (long int)malloc(sizeof(long int));
                 long int physical_offset = physicalAddress(ReadBlock.block_size,active_indirect)+i*sizeof(long int);
-                // if (i<10){
-                //     printf("Physical offset 2: %ld \n", physical_offset);
-                // }
                 lseek(fdHd, physical_offset , SEEK_SET);
                 read(fdHd, &numero, sizeof(long int));
-                // printf("Block address aqui: %ld \n", numero);
                 read_block(fdHd, ReadBlock, numero);
                 total_blocks_read++;
+                if (total_blocks_read == total_size_block){
+                    printf("\nTotal blocks read: %ld \n", total_blocks_read);
+                    break;
+                }
             }
         } else if (total_blocks_read == total_data_indirects_1){
             active_indirect = inode->indirect2;
             for (int i = 0; i < total_data_indirects_2; i++){
                 long int numero = (long int)malloc(sizeof(long int));
                 long int physical_offset = physicalAddress(ReadBlock.block_size,active_indirect)+i*sizeof(long int);
-                // printf("Physical offset 2: %ld \n", physical_offset);
-                // if (i<10){
-                //     printf("Physical offset 2: %ld \n", physical_offset);
-                // }
                 lseek(fdHd, physical_offset , SEEK_SET);
                 read(fdHd, &numero, sizeof(long int));
                 read_block(fdHd, ReadBlock, numero);
@@ -556,16 +532,17 @@ void read_block(int fdHd, struct SuperBlock ReadBlock, long int block_address){
  */
 void create_dump_directory_tree(int fdHd, struct SuperBlock ReadBlock){
 
-    allocate_dir_v2(fdHd, ReadBlock, "/pasta1");
+    allocate_dir_v2(fdHd, ReadBlock, "/pasta1","inputTest.txt");
     // allocate_dir_v2(fdHd, ReadBlock, "/pasta1/pasta1.1");
     // allocate_dir_v2(fdHd, ReadBlock, "/pasta1/pasta1.2");
     // allocate_dir_v2(fdHd, ReadBlock, "/pasta1/pasta1.1/pasta1.1.1");
-    // allocate_dir_v2(fdHd, ReadBlock, "/pasta2");
+    allocate_dir_v2(fdHd, ReadBlock, "/pasta2","inputTest2.txt");
     // allocate_dir_v2(fdHd, ReadBlock, "/pasta2/pasta2.1");
     // allocate_dir_v2(fdHd, ReadBlock, "/pasta3");
     // allocate_dir_v2(fdHd, ReadBlock, "/pasta4");
     // allocate_dir_v2(fdHd, ReadBlock, "/pasta5");
     show_all_directories(fdHd, ReadBlock);
     read_inode(fdHd, ReadBlock, 2);
+    read_inode(fdHd, ReadBlock, 3);
 
 }

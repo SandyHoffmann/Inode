@@ -15,6 +15,8 @@
 
 /**
 
+* ? Important notes:
+
 Criar HD = dd if=/dev/zero of=bla.hd bs=GB count=2
 
 Hexdump hexdump -n512 -s60 -c bla.hd
@@ -24,6 +26,9 @@ Hexdump hexdump -n512 -s60 -c bla.hd
 xxd -s 4594 -l 512 -b bla.hd
 -s = start
  -l = quantity
+
+Making a big txt for testing:
+https://www.browserling.com/tools/text-repeat
 
 */
 
