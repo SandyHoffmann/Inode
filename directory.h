@@ -27,14 +27,5 @@ typedef struct directory
 } Directory;
 
 Directory *create_dir(char *_name, int _inode);
-// void dir_insert(Directory* dir, Directory* sub_dir);
-// void ls_dir(Directory* dir);
-// void print_tree(Directory* dir);
-// int dir_pertain(Directory* dir, char* name);
-// void release_dir(Directory* dir);
-// int number_of_leafs(Directory* dir);
-// int dir_height(Directory* dir);
-// int equal_dirs(Directory* dir1, Directory* dir2);
-// Directory* copy_dir(Directory* dir);
 
 #endif
