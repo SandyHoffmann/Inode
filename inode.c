@@ -76,5 +76,22 @@ void read_inode(int fdHd, struct SuperBlock ReadBlock, long int inode_address){
     printf("inode->indirect1: %ld\n", inode->indirect1);
     printf("inode->indirect2: %ld\n", inode->indirect2);
     printf("inode->indirect3: %ld\n", inode->indirect3);
+}
+
+/**
+ * @authors Sandy Hoffmann and Leonardo de Souza Fiamoncini.
+ * @brief Read an inode data
+ * @date 22/06/2023
+ * 
+ * @param fdHd 
+ * @param ReadBlock 
+ * @param inode_address - The address of the inode to be read in block
+ */
+
+void read_inode_data(int fdHd, struct SuperBlock ReadBlock, long int inode_address){
+    long int physical_inode_address = ReadBlock.inode_start + inode_address * ReadBlock.inode_size;
+    lseek(fdHd, physical_inode_address, SEEK_SET);
+    struct Inode *inode = (struct Inode *)malloc(ReadBlock.inode_size);
+    read(fdHd, inode, ReadBlock.inode_size);
     read_data(fdHd, ReadBlock, inode);
 }

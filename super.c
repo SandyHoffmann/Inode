@@ -111,3 +111,33 @@ struct SuperBlock data_calculation_hd(int size_block, int size_inode, int size_h
 
     return super_block;
 }
+
+void show_superblock(int fdHd){
+    struct SuperBlock ReadBlock;
+    char *buffer = malloc(4096);
+    lseek(fdHd, 0, SEEK_SET);
+    read(fdHd, buffer, 4096);
+    memcpy(&ReadBlock, buffer, sizeof(struct SuperBlock));
+    printf("\nBlock size lido: %d", ReadBlock.block_size);
+    printf("\nInode size lido: %d", ReadBlock.inode_size);
+    printf("\nInode per block lido: %d", ReadBlock.inode_per_block);
+    printf("\nInode start lido: %d", ReadBlock.inode_start);
+    printf("\nInode directory start lido: %d", ReadBlock.inode_directory_start);
+    printf("\nData start lido: %d", ReadBlock.data_start);
+    printf("\nMagic Number: %ld", ReadBlock.magic);
+    printf("\nInode Bitmap Start: %d", ReadBlock.bmap_inode_start);
+    printf("\nData Bitmap Start: %d", ReadBlock.bmap_data_start);
+    printf("\nInode Total: %d", ReadBlock.inode_total);
+    printf("\nBlock Data Total: %d", ReadBlock.block_data_total);
+
+}
+
+struct SuperBlock read_superblock(int fdHd)
+{
+    struct SuperBlock ReadBlock;
+    char *buffer = malloc(4096);
+    lseek(fdHd, 0, SEEK_SET);
+    read(fdHd, buffer, 4096);
+    memcpy(&ReadBlock, buffer, sizeof(struct SuperBlock));
+    return ReadBlock;
+}

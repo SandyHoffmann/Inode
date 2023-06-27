@@ -299,14 +299,14 @@ void print_nexts(int fdHd, struct SuperBlock ReadBlock, struct directory *child_
 
    // * While child_instance exists do
 
-        printf("Inode: %d", child_instance->inode);
+        // printf("Inode: %d", child_instance->inode);
         
         for (int i = 0; i < level; i++)
         {
             printf("--");
         }
 
-        printf("Directory: %s \n", child_instance->name);
+        printf("Directory: %s (Inode - %d) \n", child_instance->name, child_instance->inode);
         // printf("Directory d: %ld \n", child_instance->next_int);
         // printf("Directory f: %ld \n", child_instance->first_int);
         if (child_instance->next_int == 0 && child_instance->first_int == 0)
@@ -511,7 +511,6 @@ void read_data(int fdHd, struct SuperBlock ReadBlock, struct Inode *inode){
         
     // * Information about the pointers
     // * each indirect pointer to a block of data (block_size or 4096 bytes)
-    // ! NEED REFACTORING
     long int total_data_indirects_1 = ReadBlock.block_size / sizeof(long int);
     long int total_data_indirects_2 = pow(ReadBlock.block_size / sizeof(long int),2);
     long int total_data_indirects_3 = pow(ReadBlock.block_size / sizeof(long int),3);
@@ -597,16 +596,16 @@ void read_block(int fdHd, struct SuperBlock ReadBlock, long int block_address, l
 void create_dump_directory_tree(int fdHd, struct SuperBlock ReadBlock){
 
     allocate_dir_v2(fdHd, ReadBlock, "/pasta1","inputTest.txt");
-    // allocate_dir_v2(fdHd, ReadBlock, "/pasta1/pasta1.1");
-    // allocate_dir_v2(fdHd, ReadBlock, "/pasta1/pasta1.2");
-    // allocate_dir_v2(fdHd, ReadBlock, "/pasta1/pasta1.1/pasta1.1.1");
+    allocate_dir_v2(fdHd, ReadBlock, "/pasta1/pasta1.1","");
+    allocate_dir_v2(fdHd, ReadBlock, "/pasta1/pasta1.2","");
+    allocate_dir_v2(fdHd, ReadBlock, "/pasta1/pasta1.1/pasta1.1.1","");
     allocate_dir_v2(fdHd, ReadBlock, "/pasta2","inputTest2.txt");
-    // allocate_dir_v2(fdHd, ReadBlock, "/pasta2/pasta2.1");
-    // allocate_dir_v2(fdHd, ReadBlock, "/pasta3");
-    // allocate_dir_v2(fdHd, ReadBlock, "/pasta4");
-    // allocate_dir_v2(fdHd, ReadBlock, "/pasta5");
-    show_all_directories(fdHd, ReadBlock);
-    read_inode(fdHd, ReadBlock, 2);
-    read_inode(fdHd, ReadBlock, 3);
+    allocate_dir_v2(fdHd, ReadBlock, "/pasta2/pasta2.1","");
+    allocate_dir_v2(fdHd, ReadBlock, "/pasta3","");
+    allocate_dir_v2(fdHd, ReadBlock, "/pasta4","");
+    allocate_dir_v2(fdHd, ReadBlock, "/pasta5","");
+    // show_all_directories(fdHd, ReadBlock);
+    // read_inode(fdHd, ReadBlock, 2);
+    // read_inode(fdHd, ReadBlock, 3);
 
 }

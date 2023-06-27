@@ -24,4 +24,6 @@ struct SuperBlock
 
 struct SuperBlock data_calculation_hd(int size_block, int size_inode, int size_hd_gb);
 struct SuperBlock create_super_block(int size_block, int size_inode, int size_hd_gb);
+void show_superblock(int fdHd);
+struct SuperBlock read_superblock(int fdHd);
 #endif
