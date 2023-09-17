@@ -4,6 +4,12 @@
 #include "directory.h"
 #include "inode.h"
 #include "file_operations.h"
+#include  <sys/types.h>
+#include  <sys/ipc.h>
+#include <sys/shm.h>
+#include <sys/wait.h>
+
+#define SHM_KEY 12345
 
 void user_menu(int fdHd){
     printf("Welcome to the Inode File System!\n");
@@ -17,6 +23,30 @@ void user_menu(int fdHd){
 
     int option = 0;
     struct SuperBlock ReadBlock = read_superblock(fdHd);
+    
+    // * Creating shared memory for both parent and child process
+    // ! For moment it's set a static size
+    int shmid = shmget(SHM_KEY, sizeof(struct Inode) * 64, IPC_CREAT | 0666);
+    if (shmid == -1) {
+        perror("shmget");
+        exit(1);
+    }
+    
+    // * Proccess responsible for managing inode directories through the volatil memory, for fast access
+    pid_t manager_dir_mem = fork();
+
+    // * If it's the memory manager active then he will initialize the active directory beggining in the RAM
+    if (manager_dir_mem == 0){
+        // * Get children of main directory (/)
+        long int inode_number = 0;
+        long int * father_addresses = return_child_inodes(inode_number, ReadBlock, fdHd);
+        int arrSize = sizeof father_addresses / sizeof father_addresses[0];
+        for (int i = 0; i < arrSize; i++) {
+            printf("aquii\n");
+            printf("%ld\n", father_addresses[i]);
+        }
+
+    }
 
     while (option != 5){
         printf("\n*--------------------------------*\n");
@@ -34,7 +64,20 @@ void user_menu(int fdHd){
                 break;
             case 2:
                 printf("Creating a dumb directory three.\n");
-                create_dump_directory_tree(fdHd, ReadBlock);
+                if (manager_dir_mem > 0){
+                    create_dump_directory_tree(fdHd, ReadBlock);
+                } else if (manager_dir_mem == 0){
+                    wait(NULL);
+                    printf("Processo filho\n");
+                    long int inode_number = 0;
+                    long int * father_addresses = return_child_inodes(inode_number, ReadBlock, fdHd);
+                    int arrSize = sizeof father_addresses / sizeof father_addresses[0];
+                    for (int i = 0; i < arrSize; i++) {
+                        printf("aquii\n");
+                        printf("%ld\n", father_addresses[i]);
+                    }
+
+                }
                 break;
             case 3:
                 printf("Listing all files and directories.\n");
@@ -54,6 +97,9 @@ void user_menu(int fdHd){
                 }
                 break;
             case 5:
+                // * CD Function
+                break;
+            case 6:
                 printf("Exiting.\n");
                 break;
             default:

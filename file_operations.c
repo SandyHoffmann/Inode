@@ -265,6 +265,37 @@ long int find_dir(int fdHd, struct SuperBlock ReadBlock, long int father_address
     }
 };
 
+
+long int * return_child_inodes(int inodeAddressFather,struct SuperBlock ReadBlock,int fdHd){
+    // ! Fixed Size 
+    long int * inodesNumbers = (long int *)malloc(sizeof(long int) * 64);
+
+    long int father_address = ReadBlock.inode_directory_start + (ReadBlock.block_size * inodeAddressFather + 1);
+    struct directory *directory_instance = (struct directory *)malloc(ReadBlock.block_size);
+    lseek(fdHd, father_address, SEEK_SET);
+    read(fdHd, directory_instance, ReadBlock.block_size);
+    printf("\nDirectory Father: %s \n", directory_instance->name);
+
+    long int child_address = directory_instance->first_int;
+    struct directory *child_instance = (struct directory *)malloc(ReadBlock.block_size);
+    lseek(fdHd, child_address * ReadBlock.block_size + 1, SEEK_SET);
+    read(fdHd, child_instance, ReadBlock.block_size);
+    
+    int contador = 0;
+    inodesNumbers[contador] = child_address;
+    while (child_instance->next_int != 0)
+    {
+        child_address = child_instance->next_int;
+        lseek(fdHd, child_instance->next_int * ReadBlock.block_size + 1, SEEK_SET);
+        read(fdHd, child_instance, ReadBlock.block_size);
+        inodesNumbers[contador] = child_address;
+    }
+    
+    return inodesNumbers;
+
+}
+
+
 /**
 * \authors Sandy Hoffmann and Leonardo de Souza Fiamoncini.
 * \since 24/04/2023.
@@ -345,7 +376,7 @@ void print_nexts(int fdHd, struct SuperBlock ReadBlock, struct directory *child_
 
 long int * allocate_data(int fdHd, struct SuperBlock ReadBlock, char *data){
     // ! First desconsidering the directs pointers
-    // ! Indirect 1° is working, 2° is working, 3° in progress
+    // ! Indirect 1ï¿½ is working, 2ï¿½ is working, 3ï¿½ in progress
 
     long int *indirectArray = malloc(4 * sizeof(long int));
     
@@ -355,7 +386,7 @@ long int * allocate_data(int fdHd, struct SuperBlock ReadBlock, char *data){
     long int total_data_indirects_2 = pow(ReadBlock.block_size / sizeof(long int),2);
     long int total_data_indirects_3 = pow(ReadBlock.block_size / sizeof(long int),3);
 
-    // * Alocando todos os blocos necessários de acordo com os indirects necessários
+    // * Alocando todos os blocos necessï¿½rios de acordo com os indirects necessï¿½rios
 
     // ? Considering a dump file data
     int text_file = open(data, O_RDONLY);
