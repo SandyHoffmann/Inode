@@ -8,6 +8,7 @@
 #include  <sys/ipc.h>
 #include <sys/shm.h>
 #include <sys/wait.h>
+#include <signal.h>
 
 #define SHM_KEY 12345
 
@@ -32,21 +33,21 @@ void user_menu(int fdHd){
         exit(1);
     }
     
-    // * Proccess responsible for managing inode directories through the volatil memory, for fast access
-    pid_t manager_dir_mem = fork();
+    // // * Proccess responsible for managing inode directories through the volatil memory, for fast access
+    // pid_t manager_dir_mem = fork();
 
-    // * If it's the memory manager active then he will initialize the active directory beggining in the RAM
-    if (manager_dir_mem == 0){
-        // * Get children of main directory (/)
-        long int inode_number = 0;
-        long int * father_addresses = return_child_inodes(inode_number, ReadBlock, fdHd);
-        int arrSize = sizeof father_addresses / sizeof father_addresses[0];
-        for (int i = 0; i < arrSize; i++) {
-            printf("aquii\n");
-            printf("%ld\n", father_addresses[i]);
-        }
+    // // * If it's the memory manager active then he will initialize the active directory beggining in the RAM
+    // if (manager_dir_mem == 0){
+    //     // * Get children of main directory (/)
+    //     long int inode_number = 0;
+    //     long int * father_addresses = return_child_inodes(inode_number, ReadBlock, fdHd);
+    //     int arrSize = sizeof father_addresses / sizeof father_addresses[0];
+    //     for (int i = 0; i < arrSize; i++) {
+    //         printf("aquii\n");
+    //         printf("%ld\n", father_addresses[i]);
+    //     }
 
-    }
+    // }
 
     while (option != 5){
         printf("\n*--------------------------------*\n");
@@ -57,6 +58,7 @@ void user_menu(int fdHd){
         printf("5. Exit.\n");
         scanf("%d", &option);
 
+
         switch (option){
             case 1:
                 printf("Showing info.\n");
@@ -64,20 +66,48 @@ void user_menu(int fdHd){
                 break;
             case 2:
                 printf("Creating a dumb directory three.\n");
-                if (manager_dir_mem > 0){
+                // * Proccess responsible for managing inode directories through the volatil memory, for fast access
+                pid_t manager_dir_mem = fork();
+                if (manager_dir_mem == 0){
+                    printf("------------------------\n");
+                    printf("PROCESSO FILHO\n");
+                    printf("------------------------\n");
                     create_dump_directory_tree(fdHd, ReadBlock);
-                } else if (manager_dir_mem == 0){
-                    wait(NULL);
-                    printf("Processo filho\n");
-                    long int inode_number = 0;
-                    long int * father_addresses = return_child_inodes(inode_number, ReadBlock, fdHd);
-                    int arrSize = sizeof father_addresses / sizeof father_addresses[0];
-                    for (int i = 0; i < arrSize; i++) {
-                        printf("aquii\n");
-                        printf("%ld\n", father_addresses[i]);
-                    }
+                } 
+                printf("------------------------\n");
+                printf("PROCESSO PAI\n");
+                printf("------------------------\n");
+                waitpid(manager_dir_mem, NULL, 0);
+                // shmid = shmget(SHM_KEY, sizeof(struct Inode) * 64, IPC_CREAT | 0666);
+                // if (shmid == -1) {
+                //     perror("shmget");
+                //     exit(1);
+                // }
+                printf("shmid %d\n", shmid);
 
+                printf("Processo pai\n");
+                long int inode_number_2 = 0;
+                long int * father_addresses = return_child_inodes(inode_number_2, ReadBlock, fdHd);
+                int arrSize = sizeof father_addresses / sizeof father_addresses[0];
+                for (int i = 0; i < 64; i++) {
+                    if (father_addresses[i] == 0){
+                        break;
+                    }
+                    printf("- %ld\n", father_addresses[i]);
                 }
+                int *sh_mem;
+                 if ((sh_mem = shmat (shmid, 0, 0)) == (int*)-1){
+                        perror("acoplamento impossivel") ;
+                        exit (1) ;
+                    }
+                // printf("sh_mem: %s\n", sh_mem);
+                // char*teste = "teste";
+                memmove(sh_mem, father_addresses, sizeof(father_addresses)+1);
+                printf("\t==>%d\n",sh_mem[0]) ;
+
+            // kill(manager_dir_mem,SIGKILL);
+
+
                 break;
             case 3:
                 printf("Listing all files and directories.\n");
@@ -100,6 +130,9 @@ void user_menu(int fdHd){
                 // * CD Function
                 break;
             case 6:
+                shmdt(sh_mem);
+                shmctl(shmid, IPC_RMID, 0);
+
                 printf("Exiting.\n");
                 break;
             default:
