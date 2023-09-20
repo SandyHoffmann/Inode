@@ -55,7 +55,8 @@ void user_menu(int fdHd){
         printf("2. Create a file.\n");
         printf("3. List all files and directories.\n");
         printf("4. Show a file content.\n");
-        printf("5. Exit.\n");
+        printf("5. LS.\n");
+        printf("6. EXIT.\n");
         scanf("%d", &option);
 
 
@@ -73,7 +74,7 @@ void user_menu(int fdHd){
                     printf("PROCESSO FILHO\n");
                     printf("------------------------\n");
                     create_dump_directory_tree(fdHd, ReadBlock);
-                } 
+                }  
                 printf("------------------------\n");
                 printf("PROCESSO PAI\n");
                 printf("------------------------\n");
@@ -87,26 +88,24 @@ void user_menu(int fdHd){
 
                 printf("Processo pai\n");
                 long int inode_number_2 = 0;
-                long int * father_addresses = return_child_inodes(inode_number_2, ReadBlock, fdHd);
+                InodeNumberNameDir * father_addresses = return_child_inodes(inode_number_2, ReadBlock, fdHd);
                 int arrSize = sizeof father_addresses / sizeof father_addresses[0];
                 for (int i = 0; i < 64; i++) {
-                    if (father_addresses[i] == 0){
+                    if (father_addresses->inodeNumbers[i] == 0){
                         break;
                     }
-                    printf("- %ld\n", father_addresses[i]);
+                    printf("~/%s (%ld)", father_addresses->dirNames[i], father_addresses->inodeNumbers[i] );
                 }
-                int *sh_mem;
-                 if ((sh_mem = shmat (shmid, 0, 0)) == (int*)-1){
+                InodeNumberNameDir *sh_mem;
+                if ((sh_mem = shmat (shmid, 0, 0)) == (InodeNumberNameDir*)-1){
                         perror("acoplamento impossivel") ;
                         exit (1) ;
                     }
                 // printf("sh_mem: %s\n", sh_mem);
                 // char*teste = "teste";
                 memmove(sh_mem, father_addresses, sizeof(father_addresses)+1);
-                printf("\t==>%d\n",sh_mem[0]) ;
 
-            // kill(manager_dir_mem,SIGKILL);
-
+                // kill(manager_dir_mem,SIGKILL);
 
                 break;
             case 3:
@@ -127,13 +126,24 @@ void user_menu(int fdHd){
                 }
                 break;
             case 5:
-                // * CD Function
+                // * LS Function
+                if ((sh_mem = shmat (shmid, 0, 0)) == (InodeNumberNameDir*)-1){
+                        perror("acoplamento impossivel") ;
+                        
+                }
+                for (int i = 0; i < 64; i++) {
+                    if (father_addresses->inodeNumbers[i] == 0){
+                        break;
+                    }
+                    printf(" ~/%s (%ld)", father_addresses->dirNames[i], father_addresses->inodeNumbers[i] );
+                }
                 break;
             case 6:
-                shmdt(sh_mem);
+                // shmdt(sh_mem);
                 shmctl(shmid, IPC_RMID, 0);
 
                 printf("Exiting.\n");
+                exit (1);
                 break;
             default:
                 printf("Invalid option.\n");

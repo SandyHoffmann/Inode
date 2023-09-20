@@ -266,9 +266,10 @@ long int find_dir(int fdHd, struct SuperBlock ReadBlock, long int father_address
 };
 
 
-long int * return_child_inodes(int inodeAddressFather,struct SuperBlock ReadBlock,int fdHd){
+InodeNumberNameDir * return_child_inodes(int inodeAddressFather,struct SuperBlock ReadBlock,int fdHd){
     // ! Fixed Size 
     long int * inodesNumbers = (long int *)malloc(sizeof(long int) * 64);
+    char * inodeNames[64];
     // ! NAO ESQUECER O MAIS 1 SE NAO FOR O DIRETORIO PAI
     long int father_address = ReadBlock.inode_directory_start + (ReadBlock.block_size * inodeAddressFather);
     struct directory *directory_instance = (struct directory *)malloc(ReadBlock.block_size);
@@ -283,18 +284,28 @@ long int * return_child_inodes(int inodeAddressFather,struct SuperBlock ReadBloc
     
     int contador = 0;
     inodesNumbers[contador] = child_address;
+
+    inodeNames[contador] = child_instance->name;
+    InodeNumberNameDir * inodeSet = (struct InodeNumberNameDir *) malloc(sizeof(struct InodeNumberNameDir));
+
     while (child_instance->next_int != 0)
     {
         child_address = child_instance->next_int;
         lseek(fdHd, child_instance->next_int * ReadBlock.block_size + 1, SEEK_SET);
         read(fdHd, child_instance, ReadBlock.block_size);
         inodesNumbers[contador] = child_instance->inode;
-;
+        inodeNames[contador]=strdup(child_instance->name);
         contador++;
-        printf("Child inode: %d;\n", child_instance->inode);
     }
     
-    return inodesNumbers;
+    inodeSet->inodeNumbers = inodesNumbers;
+    for (size_t i = 0; i < contador; i++)
+    {
+
+        inodeSet->dirNames[i] = strdup(inodeNames[i]);
+    }
+
+    return inodeSet;
 
 }
 

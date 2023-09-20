@@ -7,6 +7,14 @@
 #define _file_operations_h
 #include "file_operations.h"
 
+typedef struct InodeNumberNameDir 
+{
+    long int * inodeNumbers;
+    char * dirNames[];
+
+} InodeNumberNameDir;
+
+
 long int physicalAddress(int blockSize, long int block);
 Directory *returnDirPhysicalLocation(int fdHd, struct SuperBlock ReadBlock, long int block);
 void allocate_dir_v2(int fdHd, struct SuperBlock ReadBlock, char *dir_name, char *file_name);
@@ -18,6 +26,6 @@ long int * allocate_data(int fdHd, struct SuperBlock ReadBlock, char *data);
 void write_block(int fdHd, struct SuperBlock ReadBlock, char *data, long int block_address);
 void read_data(int fdHd, struct SuperBlock ReadBlock, struct Inode *inode);
 void read_block(int fdHd, struct SuperBlock ReadBlock, long int block_address, long int i);
-long int * return_child_inodes(int inodeAddressFather,struct SuperBlock ReadBlock,int fdHd);
+InodeNumberNameDir * return_child_inodes(int inodeAddressFather,struct SuperBlock ReadBlock,int fdHd);
 void write_indirect(int fdHd,struct SuperBlock ReadBlock,char *data, long int block_address, long int indirect_counter, long int active_indirect, int level);
 #endif
