@@ -32,22 +32,6 @@ void user_menu(int fdHd){
         perror("shmget");
         exit(1);
     }
-    
-    // // * Proccess responsible for managing inode directories through the volatil memory, for fast access
-    // pid_t manager_dir_mem = fork();
-
-    // // * If it's the memory manager active then he will initialize the active directory beggining in the RAM
-    // if (manager_dir_mem == 0){
-    //     // * Get children of main directory (/)
-    //     long int inode_number = 0;
-    //     long int * father_addresses = return_child_inodes(inode_number, ReadBlock, fdHd);
-    //     int arrSize = sizeof father_addresses / sizeof father_addresses[0];
-    //     for (int i = 0; i < arrSize; i++) {
-    //         printf("aquii\n");
-    //         printf("%ld\n", father_addresses[i]);
-    //     }
-
-    // }
 
     while (option != 5){
         printf("\n*--------------------------------*\n");
@@ -73,39 +57,39 @@ void user_menu(int fdHd){
                     printf("------------------------\n");
                     printf("PROCESSO FILHO\n");
                     printf("------------------------\n");
+                    // * Creating dump data
                     create_dump_directory_tree(fdHd, ReadBlock);
                 }  
                 printf("------------------------\n");
                 printf("PROCESSO PAI\n");
                 printf("------------------------\n");
+                // * Waiting for creation
                 waitpid(manager_dir_mem, NULL, 0);
-                // shmid = shmget(SHM_KEY, sizeof(struct Inode) * 64, IPC_CREAT | 0666);
-                // if (shmid == -1) {
-                //     perror("shmget");
-                //     exit(1);
-                // }
+               
                 printf("shmid %d\n", shmid);
 
                 printf("Processo pai\n");
                 long int inode_number_2 = 0;
+                // * Catching inodes from hd of the current directory (in this case, is the root directory)
                 InodeNumberNameDir * father_addresses = return_child_inodes(inode_number_2, ReadBlock, fdHd);
                 int arrSize = sizeof father_addresses / sizeof father_addresses[0];
+                // ! STATIC SIZE (for moment)
                 for (int i = 0; i < 64; i++) {
                     if (father_addresses->inodeNumbers[i] == 0){
                         break;
                     }
                     printf("~/%s (%ld)", father_addresses->dirNames[i], father_addresses->inodeNumbers[i] );
                 }
+                // * 
                 InodeNumberNameDir *sh_mem;
+                // * Attaching the shared memory to the process, to allow the operation of moving the data
                 if ((sh_mem = shmat (shmid, 0, 0)) == (InodeNumberNameDir*)-1){
                         perror("acoplamento impossivel") ;
                         exit (1) ;
                     }
-                // printf("sh_mem: %s\n", sh_mem);
-                // char*teste = "teste";
+                // * Moving the actual data from buffer to shared memory
                 memmove(sh_mem, father_addresses, sizeof(father_addresses)+1);
 
-                // kill(manager_dir_mem,SIGKILL);
 
                 break;
             case 3:
@@ -127,10 +111,21 @@ void user_menu(int fdHd){
                 break;
             case 5:
                 // * LS Function
-                if ((sh_mem = shmat (shmid, 0, 0)) == (InodeNumberNameDir*)-1){
+                printf("ls");
+                InodeNumberNameDir *sh_mem_;
+
+                if ((sh_mem_ = shmat (shmid, 0, 0)) == (InodeNumberNameDir*)-1){
                         perror("acoplamento impossivel") ;
                         
                 }
+                printf("-----%ld",sh_mem_->inodeNumbers[0]);
+                printf("-----%ld",sh_mem_->inodeNumbers[1]);
+                printf("-----%ld",sh_mem_->inodeNumbers[2]);
+                printf("-----%ld",sh_mem_->inodeNumbers[3]);
+
+                printf("\n");
+
+
                 for (int i = 0; i < 64; i++) {
                     if (father_addresses->inodeNumbers[i] == 0){
                         break;

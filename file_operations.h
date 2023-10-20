@@ -10,7 +10,7 @@
 typedef struct InodeNumberNameDir 
 {
     long int * inodeNumbers;
-    char * dirNames[];
+    char * dirNames[64];
 
 } InodeNumberNameDir;
 

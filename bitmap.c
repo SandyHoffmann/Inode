@@ -60,6 +60,6 @@ int return_free_bit(int fdHd, long int total, long int bmap_start)
             return (i * 8) + casas;
         }
     }
-    printf("\nNão há bits livres\n");
+    printf("\nNï¿½o hï¿½ bits livres\n");
     return -1;
 };
