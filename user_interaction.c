@@ -9,6 +9,8 @@
 #include <sys/shm.h>
 #include <sys/wait.h>
 #include <signal.h>
+#include <string.h>
+#include <unistd.h>
 
 #define SHM_KEY 12345
 
@@ -32,6 +34,92 @@ void user_menu(int fdHd){
         perror("shmget");
         exit(1);
     }
+    
+    // TODO 
+
+    // * Interação com usuário não ser mais por número e sim por comando
+    // * - Definir lista de opções possíveis para o usuário
+    // * - Então, regra: até comando >>quit() terminal vai estar ativo
+
+    // * Navegação entre diretórios deve estar funcional
+    // * - Aproveitar concorrencia implementada até então, mas usa-la de forma mais encapsulada
+
+    // ? Principal
+    // * Quando usuário criar arquivo e alocar dados nele, a operação de alocar dados deve estar ocorrendo de forma paralela
+    // * - Ou seja, o terminal irá continuar funcionando enquanto os dados estão sendo alocados (pois são operações distintas)
+    
+    // ? Futuro
+    // * Fazer com que a gravação de dados no hd ocorra de forma concorrente
+    // * - O que pode se tornar dificil pelo acesso ao arquivo físico (escrita)
+
+    char opcao[255] = "";
+    // * Arquivo Fifo em tempo real sobre oq o processo esta fazendo
+    // * Basta digitar em um terminal auxiliar: >>mkfifo output >>cat output
+    const char *fifoPath = "output";
+    int fifo_fd = open(fifoPath, O_WRONLY);
+
+  
+
+    // ? Menu de instruções básico que supõe que:
+    // ? - Instruções podem ter mais dados com espaçamento
+    // ? - No caso do ls (por enquanto) possui dois dados >> ls "caminho/div/por/barra"
+
+    char *opcAnterior = (char *)malloc(sizeof(char) * 255);
+    while(strcmp(opcao, "quit")!=0){
+        printf(">>");
+        fflush(stdout); 
+        // expressão para pegar string com espaços para não dar multi insert
+        scanf("%[^\n]%*c", opcao);
+        // fgets(opcao, sizeof(opcao), stdin);
+        // size_t len = strlen(opcao);
+        // if (len > 0 && opcao[len - 1] == '\n') {
+        //     opcao[len - 1] = '\0';
+        // }
+        char * keys = strtok(opcao, " ");
+
+
+        if(strcmp(opcao, "ls") == 0){
+            // * Listar diretorio
+            printf("ls");
+        } else if (strcmp(keys, "cd")  == 0){
+            // * Entrar em pasta
+            // ! Strtok dentro da função especifica 
+
+            printf("cd");
+            keys = strtok(NULL, " ");
+            printf("Opc anterior: %s\n", keys);
+            printf("Caminho: %s\n", opcao);
+        } else if (strcmp(opcao, "touch")  == 0){ 
+            setbuf(stdout, NULL); 
+            printf("touch");
+            pid_t process_file = fork();
+            if (process_file == 0){
+                if (dup2(fifo_fd, STDOUT_FILENO) == -1) {
+                    exit(EXIT_FAILURE);
+                }
+                allocate_dir_v2(fdHd, ReadBlock, "/pasta1","inputTest.txt");
+                fflush(stdout); 
+                if (dup2(STDOUT_FILENO, STDOUT_FILENO) == -1) {
+                    perror("dup2");
+                    exit(EXIT_FAILURE);
+                }
+
+                exit(EXIT_SUCCESS);
+            }  
+
+
+        } else {
+            printf("Comando inválido");
+        }
+        // strcpy(opcAnterior, keys);
+        printf("\n");
+
+    }
+    // Fechando o fifo
+
+    close(fifo_fd);
+
+
 
     while (option != 5){
         printf("\n*--------------------------------*\n");
@@ -133,7 +221,11 @@ void user_menu(int fdHd){
                     printf(" ~/%s (%ld)", father_addresses->dirNames[i], father_addresses->inodeNumbers[i] );
                 }
                 break;
+            
             case 6:
+                // * Criar arquivo com dados de input
+                
+            case 7:
                 // shmdt(sh_mem);
                 shmctl(shmid, IPC_RMID, 0);
 

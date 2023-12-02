@@ -186,7 +186,7 @@ void allocate_dir_v2(int fdHd, struct SuperBlock ReadBlock, char *dir_name, char
         long int *indirects = (long int *)malloc(4 * sizeof(long int));
         if (strlen(file_name) > 1){
             indirects = allocate_data(fdHd, ReadBlock, file_name);
-
+            
         }
 
         // * Allocating Inode

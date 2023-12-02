@@ -77,7 +77,7 @@ void logo_print(){
     printf("      +#+           +#+  +#+#+#      +#+    +#+      +#+    +#+      +#+                     +#+      +#+                +#+      +#+           +#+              +#+       +#+   \n");
     printf("     #+#           #+#   #+#+#      #+#    #+#      #+#    #+#      #+#              #+#    #+#      #+#         #+#    #+#      #+#           #+#              #+#       #+#    \n");
     printf("###########       ###    ####       ########       #########       ##########        ########       ###          ########       ###           ##########       ###       ###   \n");
-    printf("\033[0m"); // Restaura as configurações de cores padrão
+    printf("\033[0m"); // Restaura as configuraï¿½ï¿½es de cores padrï¿½o
 
 }
 
@@ -86,7 +86,7 @@ void main()
     logo_print();
     open_hd();
     resetHdF();
-    sleep(2);
+    // sleep(2);
     user_menu(fdHd);
     // directory_test(fdHd);
 
