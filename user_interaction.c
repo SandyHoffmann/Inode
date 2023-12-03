@@ -15,6 +15,10 @@
 #define SHM_KEY 12345
 
 void user_menu(int fdHd){
+    //key needs to come from file because some systems have a fixed lenghh in shmid and it can retrieve an error when i try to allocate more memory
+    key_t key = ftok("output.txt", 'B');
+
+
     printf("Welcome to the Inode File System!\n");
     printf("We will format your disk now.\n");
     sleep(1);
@@ -29,12 +33,22 @@ void user_menu(int fdHd){
     
     // * Creating shared memory for both parent and child process
     // ! For moment it's set a static size
-    int shmid = shmget(SHM_KEY, sizeof(struct Inode) * 64, IPC_CREAT | 0666);
+    size_t size = sizeof(InodeNumberNameDir);
+
+    printf("Size of InodeNumberNameDir: %zu bytes\n", size);
+    long shmmax = sysconf(_SC_PAGESIZE) * sysconf(_SC_PHYS_PAGES);
+
+    printf("SHMMAX value on this system: %ld bytes\n", shmmax);
+    printf("key: %d\n", key);
+
+    int shmid = shmget(key, size, IPC_CREAT | 0666);
+    printf("shmid: %d bytes\n", shmid);
     if (shmid == -1) {
         perror("shmget");
         exit(1);
     }
-    
+    InodeNumberNameDir *sh_mem = (struct InodeNumberNameDir *) shmat(shmid, NULL, 0);
+    char * shared_string;
     // TODO 
 
     // * Interação com usuário não ser mais por número e sim por comando
@@ -65,22 +79,49 @@ void user_menu(int fdHd){
     // ? - No caso do ls (por enquanto) possui dois dados >> ls "caminho/div/por/barra"
 
     char *opcAnterior = (char *)malloc(sizeof(char) * 255);
+    // * Starting from the root
+    long int currentDirectory = 0;
+    // * Searching for root
+    return_child_inodes(currentDirectory, ReadBlock, fdHd, sh_mem);
     while(strcmp(opcao, "quit")!=0){
         printf(">>");
         fflush(stdout); 
         // expressão para pegar string com espaços para não dar multi insert
         scanf("%[^\n]%*c", opcao);
-        // fgets(opcao, sizeof(opcao), stdin);
-        // size_t len = strlen(opcao);
-        // if (len > 0 && opcao[len - 1] == '\n') {
-        //     opcao[len - 1] = '\0';
-        // }
-        char * keys = strtok(opcao, " ");
 
+        char * keys = strtok(opcao, " ");
 
         if(strcmp(opcao, "ls") == 0){
             // * Listar diretorio
             printf("ls");
+                        
+            // InodeNumberNameDir *sh_mem_ = (struct InodeNumberNameDir *) shmat (shmid, NULL, 0);
+
+            // if ((sh_mem_ = shmat (shmid, NULL, 0)) == (void *)-1){
+            //         perror("acoplamento impossivel") ;   
+            // }
+
+            // if (sh_mem_ == NULL) {
+            //     perror("Failed to attach shared memory");
+            //     exit(1);
+            // }
+
+            printf("-----%s",sh_mem->dirNames[0]);
+            printf("-----%ld",sh_mem->inodeNumbers[0]);
+
+            // shmdt(sh_mem_);
+            // printf("-----%s",sh_mem_->dirNames[1]);
+
+            // printf("-----%ld",sh_mem_->inodeNumbers[1]);
+
+            // for (int i = 0; i < 64; i++) {
+            //     if (sh_mem_->inodeNumbers[i] == 0){
+            //         break;
+            //     }
+            //     printf(" ~/%s (%ld)", sh_mem_->dirNames[i], sh_mem_->inodeNumbers[i] );
+            // }
+
+
         } else if (strcmp(keys, "cd")  == 0){
             // * Entrar em pasta
             // ! Strtok dentro da função especifica 
@@ -89,6 +130,7 @@ void user_menu(int fdHd){
             keys = strtok(NULL, " ");
             printf("Opc anterior: %s\n", keys);
             printf("Caminho: %s\n", opcao);
+
         } else if (strcmp(opcao, "touch")  == 0){ 
             setbuf(stdout, NULL); 
             printf("touch");
@@ -98,15 +140,50 @@ void user_menu(int fdHd){
                     exit(EXIT_FAILURE);
                 }
                 allocate_dir_v2(fdHd, ReadBlock, "/pasta1","inputTest.txt");
+
                 fflush(stdout); 
                 if (dup2(STDOUT_FILENO, STDOUT_FILENO) == -1) {
                     perror("dup2");
                     exit(EXIT_FAILURE);
                 }
+                memcpy(sh_mem, return_child_inodes(currentDirectory, ReadBlock, fdHd, sh_mem), sizeof(struct InodeNumberNameDir));
+                // for (int i = 0; i < 64; ++i) {
+                //     // Check for memory allocation errors...
+                //     if (sh_mem->dirNames[i] == NULL) {
+                //         break;
+                //         // Handle error: free previously allocated memory and exit or return an error code
+                //     }
+                //     strcpy(sh_mem->dirNames[i], sh_mem->dirNames[i]);
+                //     printf("-----%s",sh_mem->dirNames[0]);
+
+                // }
+                
+               // sh_mem->dirNames[0] = "aaaaaaaaaaaaaaaaaaaa";
+                // char stringgggggg[22] = "aaaa";
+                // strcpy(sh_mem->dirNames[0], stringgggggg);
+                // char *shared_message = (char *)shmat(shmid, NULL, 0);
+                // strncpy(shared_message, stringgggggg, 255 - 1);
+
+                InodeNumberNameDir *sh_mem = (struct InodeNumberNameDir *) shmat(shmid, NULL, 0);
+                // memcpy(sh_mem, return_child_inodes(currentDirectory, ReadBlock, fdHd, sh_mem), sizeof(struct InodeNumberNameDir));
+                //sh_mem = return_child_inodes(currentDirectory, ReadBlock, fdHd, sh_mem);
+                for (int i = 0; i < 1; ++i) {
+                    // Check for memory allocation errors...
+                    if (sh_mem->dirNames[i] == NULL) {
+                        break;
+                        // Handle error: free previously allocated memory and exit or return an error code
+                    }
+                    // sh_mem->dirNames[i] = sh_mem->dirNames[i];
+                    // snprintf(sh_mem->dirNames[i], sizeof(inodeNames[i]), inodeNames[i], i);
+                    // memmove(sh_mem->dirNames[i], "aaaaaaaaaaaaa", 255);
+                    printf("-----%s",sh_mem->dirNames[0]);
+
+                }
+                // sh_mem->dirNames =
+                printf("-----%s",sh_mem->dirNames[0]);
 
                 exit(EXIT_SUCCESS);
-            }  
-
+            }
 
         } else {
             printf("Comando inválido");
@@ -159,7 +236,7 @@ void user_menu(int fdHd){
                 printf("Processo pai\n");
                 long int inode_number_2 = 0;
                 // * Catching inodes from hd of the current directory (in this case, is the root directory)
-                InodeNumberNameDir * father_addresses = return_child_inodes(inode_number_2, ReadBlock, fdHd);
+                InodeNumberNameDir * father_addresses;
                 int arrSize = sizeof father_addresses / sizeof father_addresses[0];
                 // ! STATIC SIZE (for moment)
                 for (int i = 0; i < 64; i++) {

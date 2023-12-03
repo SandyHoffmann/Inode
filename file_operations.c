@@ -7,6 +7,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include <strings.h>
+#include  <sys/ipc.h>
+#include <sys/shm.h>
+#include <sys/wait.h>
+#include <signal.h>
 
 #include "file_operations.h"
 #include "super.h"
@@ -266,7 +270,7 @@ long int find_dir(int fdHd, struct SuperBlock ReadBlock, long int father_address
 };
 
 
-InodeNumberNameDir * return_child_inodes(int inodeAddressFather,struct SuperBlock ReadBlock,int fdHd){
+InodeNumberNameDir * return_child_inodes(int inodeAddressFather,struct SuperBlock ReadBlock,int fdHd, InodeNumberNameDir * sh_mem){
     // ! Fixed Size 
     long int * inodesNumbers = (long int *)malloc(sizeof(long int) * 64);
     char * inodeNames[64];
@@ -278,31 +282,68 @@ InodeNumberNameDir * return_child_inodes(int inodeAddressFather,struct SuperBloc
     printf("\nDirectory Father: %s \n", directory_instance->name);
 
     long int child_address = directory_instance->first_int;
-    struct directory *child_instance = (struct directory *)malloc(ReadBlock.block_size);
-    lseek(fdHd, child_address * ReadBlock.block_size + 1, SEEK_SET);
-    read(fdHd, child_instance, ReadBlock.block_size);
+    printf("child_address: %ld\n", child_address);
+    InodeNumberNameDir * inodeSet = (struct InodeNumberNameDir *) malloc(sizeof(struct InodeNumberNameDir));
+     for (int i = 0; i < 64; ++i) {
+        inodeSet->inodeNumbers[i] = 0; // You can initialize with any default value
+    }
     
     int contador = 0;
-    inodesNumbers[contador] = child_address;
 
-    inodeNames[contador] = child_instance->name;
-    InodeNumberNameDir * inodeSet = (struct InodeNumberNameDir *) malloc(sizeof(struct InodeNumberNameDir));
-
-    while (child_instance->next_int != 0)
-    {
-        child_address = child_instance->next_int;
-        lseek(fdHd, child_instance->next_int * ReadBlock.block_size + 1, SEEK_SET);
+    if (child_address != 0){
+        struct directory *child_instance = (struct directory *)malloc(ReadBlock.block_size);
+        lseek(fdHd, child_address * ReadBlock.block_size + 1, SEEK_SET);
         read(fdHd, child_instance, ReadBlock.block_size);
         inodesNumbers[contador] = child_instance->inode;
         inodeNames[contador]=strdup(child_instance->name);
-        contador++;
-    }
-    
-    inodeSet->inodeNumbers = inodesNumbers;
-    for (size_t i = 0; i < contador; i++)
-    {
+        while (child_instance->next_int != 0)
+            {
+                contador++;
+                child_address = child_instance->next_int;
+                lseek(fdHd, child_instance->next_int * ReadBlock.block_size + 1, SEEK_SET);
+                read(fdHd, child_instance, ReadBlock.block_size);
+                inodesNumbers[contador] = child_instance->inode;
+                inodeNames[contador]=strdup(child_instance->name);
+            }
+        printf("contador: %d\n", contador);
 
-        inodeSet->dirNames[i] = strdup(inodeNames[i]);
+        for (size_t i = 0; i < contador+1; i++)
+        {
+
+            printf("fooooooooooooooooooooooooooor\n");
+            printf("********Nome: %s\n", inodeNames[i]);
+            printf("********inodesNumbers: %d\n", inodesNumbers[i]);
+            // inodeSet->dirNames[i] = strdup(inodeNames[i]);
+            inodeSet->inodeNumbers[i] = 322;
+            snprintf(inodeSet->dirNames[i], sizeof(inodeNames[i]), inodeNames[i], i);
+            printf("********inodeSet: %s\n", inodeSet->dirNames[i]);
+            printf("********inodesNumbers2: %d\n", inodeSet->inodeNumbers[i]);
+        }
+
+
+    // printf("********inodeSet[0]: %s\n", inodeSet->dirNames[0]);
+    // InodeNumberNameDir *sh_mem = (struct InodeNumberNameDir *) shmat(shmid, NULL, 0);
+    // * Attaching the shared memory to the process, to allow the operation of moving the data
+    // if ((sh_mem = shmat (shmid, 0, 0)) == (void *)-1){
+    //     perror("acoplamento impossivel") ;
+    //     exit (1) ;
+    // }
+    // * Moving the actual data from buffer to shared memory
+    // if ((sh_mem = (struct InodeNumberNameDir *)shmat(shmid, NULL, 0)) == (void *)-1) {
+    //         perror("shmat failed");
+    //         exit(1);
+    //     }
+
+    // for (int i = 0; i < contador+1; i++) {
+    //     sh_mem->dirNames[i] = "ALO";
+    //     sh_mem->inodeNumbers[i] = inodeSet->inodeNumbers[i];
+    //     // Copy other members if needed...
+    // }
+    
+    // memmove(sh_mem, &inodeSet, sizeof(struct InodeNumberNameDir));
+    // printf("********sh_mem[0]: %s\n", sh_mem->dirNames[0]);
+    //shmdt(sh_mem);
+
     }
 
     return inodeSet;

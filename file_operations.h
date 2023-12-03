@@ -9,8 +9,8 @@
 
 typedef struct InodeNumberNameDir 
 {
-    long int * inodeNumbers;
-    char * dirNames[64];
+    long int inodeNumbers[64];
+    char dirNames[64][255];
 
 } InodeNumberNameDir;
 
@@ -26,6 +26,6 @@ long int * allocate_data(int fdHd, struct SuperBlock ReadBlock, char *data);
 void write_block(int fdHd, struct SuperBlock ReadBlock, char *data, long int block_address);
 void read_data(int fdHd, struct SuperBlock ReadBlock, struct Inode *inode);
 void read_block(int fdHd, struct SuperBlock ReadBlock, long int block_address, long int i);
-InodeNumberNameDir * return_child_inodes(int inodeAddressFather,struct SuperBlock ReadBlock,int fdHd);
+InodeNumberNameDir * return_child_inodes(int inodeAddressFather,struct SuperBlock ReadBlock,int fdHd, InodeNumberNameDir * sh_mem);
 void write_indirect(int fdHd,struct SuperBlock ReadBlock,char *data, long int block_address, long int indirect_counter, long int active_indirect, int level);
 #endif
