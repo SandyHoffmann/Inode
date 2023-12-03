@@ -15,8 +15,8 @@
 #define SHM_KEY 12345
 
 void user_menu(int fdHd){
-    //key needs to come from file because some systems have a fixed lenghh in shmid and it can retrieve an error when i try to allocate more memory
-    key_t key = ftok("output.txt", 'B');
+    //*key needs to come from file because some systems have a fixed lenghh in shmid and it can retrieve an error when i try to allocate more memory
+    key_t key = ftok("output.txt", 'C');
 
 
     printf("Welcome to the Inode File System!\n");
@@ -81,6 +81,8 @@ void user_menu(int fdHd){
     char *opcAnterior = (char *)malloc(sizeof(char) * 255);
     // * Starting from the root
     long int currentDirectory = 0;
+    // * beforeDir
+    long int beforeDirectory = 0;
     // * Searching for root
     return_child_inodes(currentDirectory, ReadBlock, fdHd, sh_mem);
     while(strcmp(opcao, "quit")!=0){
@@ -94,32 +96,13 @@ void user_menu(int fdHd){
         if(strcmp(opcao, "ls") == 0){
             // * Listar diretorio
             printf("ls");
-                        
-            // InodeNumberNameDir *sh_mem_ = (struct InodeNumberNameDir *) shmat (shmid, NULL, 0);
-
-            // if ((sh_mem_ = shmat (shmid, NULL, 0)) == (void *)-1){
-            //         perror("acoplamento impossivel") ;   
-            // }
-
-            // if (sh_mem_ == NULL) {
-            //     perror("Failed to attach shared memory");
-            //     exit(1);
-            // }
-
-            printf("-----%s",sh_mem->dirNames[0]);
-            printf("-----%ld",sh_mem->inodeNumbers[0]);
-
-            // shmdt(sh_mem_);
-            // printf("-----%s",sh_mem_->dirNames[1]);
-
-            // printf("-----%ld",sh_mem_->inodeNumbers[1]);
-
-            // for (int i = 0; i < 64; i++) {
-            //     if (sh_mem_->inodeNumbers[i] == 0){
-            //         break;
-            //     }
-            //     printf(" ~/%s (%ld)", sh_mem_->dirNames[i], sh_mem_->inodeNumbers[i] );
-            // }
+                    
+            for (int i = 0; i < 64; i++) {
+                if (sh_mem->inodeNumbers[i] == 0){
+                    break;
+                }
+                printf(" ~/%s (%ld) (%ld)", sh_mem->dirNames[i], sh_mem->inodeNumbers[i], sh_mem->rootBlocks[i] );
+            }
 
 
         } else if (strcmp(keys, "cd")  == 0){
@@ -130,16 +113,47 @@ void user_menu(int fdHd){
             keys = strtok(NULL, " ");
             printf("Opc anterior: %s\n", keys);
             printf("Caminho: %s\n", opcao);
+            // ! Apenas voltando uma vez por momento
+            if (strcmp(keys, "..") == 0){
+                memcpy(sh_mem, return_child_inodes(beforeDirectory, ReadBlock, fdHd, sh_mem), sizeof(struct InodeNumberNameDir));
+                currentDirectory = beforeDirectory;
+            } else {
 
+                // * Achar nome na lista sh_mem, para pegar o id;
+
+                long int id_bloco = -1;
+
+                for (int i = 0; i < 64; i++) {
+                    if (sh_mem->rootBlocks[i] == 0){
+                        break;
+                    } else if (strcmp(sh_mem->dirNames[i], keys) == 0){
+                        id_bloco = sh_mem->rootBlocks[i];
+                        break;
+                    }
+                }
+
+                if (id_bloco < 0){
+                    printf("Caminho inválido!\n");
+                } else {
+                    beforeDirectory = currentDirectory;
+                    printf("id blocoNumber: %ld\n", id_bloco);
+                    memcpy(sh_mem, return_child_inodes(id_bloco, ReadBlock, fdHd, sh_mem), sizeof(struct InodeNumberNameDir));
+                    currentDirectory = id_bloco;
+                }
+            }
         } else if (strcmp(opcao, "touch")  == 0){ 
             setbuf(stdout, NULL); 
             printf("touch");
+            keys = strtok(NULL, " ");
             pid_t process_file = fork();
+
             if (process_file == 0){
                 if (dup2(fifo_fd, STDOUT_FILENO) == -1) {
                     exit(EXIT_FAILURE);
                 }
-                allocate_dir_v2(fdHd, ReadBlock, "/pasta1","inputTest.txt");
+                printf("Currentdir: %d\n", currentDirectory);
+
+                allocate_dir_v2(fdHd, ReadBlock,keys,"inputTest.txt",currentDirectory);
 
                 fflush(stdout); 
                 if (dup2(STDOUT_FILENO, STDOUT_FILENO) == -1) {
@@ -147,48 +161,39 @@ void user_menu(int fdHd){
                     exit(EXIT_FAILURE);
                 }
                 memcpy(sh_mem, return_child_inodes(currentDirectory, ReadBlock, fdHd, sh_mem), sizeof(struct InodeNumberNameDir));
-                // for (int i = 0; i < 64; ++i) {
-                //     // Check for memory allocation errors...
-                //     if (sh_mem->dirNames[i] == NULL) {
-                //         break;
-                //         // Handle error: free previously allocated memory and exit or return an error code
-                //     }
-                //     strcpy(sh_mem->dirNames[i], sh_mem->dirNames[i]);
-                //     printf("-----%s",sh_mem->dirNames[0]);
-
-                // }
-                
-               // sh_mem->dirNames[0] = "aaaaaaaaaaaaaaaaaaaa";
-                // char stringgggggg[22] = "aaaa";
-                // strcpy(sh_mem->dirNames[0], stringgggggg);
-                // char *shared_message = (char *)shmat(shmid, NULL, 0);
-                // strncpy(shared_message, stringgggggg, 255 - 1);
-
-                InodeNumberNameDir *sh_mem = (struct InodeNumberNameDir *) shmat(shmid, NULL, 0);
-                // memcpy(sh_mem, return_child_inodes(currentDirectory, ReadBlock, fdHd, sh_mem), sizeof(struct InodeNumberNameDir));
-                //sh_mem = return_child_inodes(currentDirectory, ReadBlock, fdHd, sh_mem);
-                for (int i = 0; i < 1; ++i) {
-                    // Check for memory allocation errors...
-                    if (sh_mem->dirNames[i] == NULL) {
-                        break;
-                        // Handle error: free previously allocated memory and exit or return an error code
-                    }
-                    // sh_mem->dirNames[i] = sh_mem->dirNames[i];
-                    // snprintf(sh_mem->dirNames[i], sizeof(inodeNames[i]), inodeNames[i], i);
-                    // memmove(sh_mem->dirNames[i], "aaaaaaaaaaaaa", 255);
-                    printf("-----%s",sh_mem->dirNames[0]);
-
-                }
-                // sh_mem->dirNames =
-                printf("-----%s",sh_mem->dirNames[0]);
 
                 exit(EXIT_SUCCESS);
             }
 
-        } else {
+        } else if (strcmp(opcao, "cat")  == 0){
+            printf("cat");
+            keys = strtok(NULL, " ");
+            long int id_inode = -1;
+
+            for (int i = 0; i < 64; i++) {
+                if (sh_mem->inodeNumbers[i] == 0){
+                    break;
+                } else if (strcmp(sh_mem->dirNames[i], keys) == 0){
+                    id_inode = sh_mem->inodeNumbers[i];
+                    break;
+                }
+            }
+
+            if (id_inode < 0){
+                printf("Caminho inválido!\n");
+            } else {
+                printf("id id_inode: %ld\n", id_inode);
+                read_inode(fdHd, ReadBlock, id_inode);
+                keys = strtok(NULL, " ");
+                if (strcmp(keys, "y") == 0){
+                    printf("Showing a file content.\n");
+                    read_inode_data(fdHd, ReadBlock, id_inode);
+                }
+            }
+        }
+        else {
             printf("Comando inválido");
         }
-        // strcpy(opcAnterior, keys);
         printf("\n");
 
     }
@@ -196,126 +201,6 @@ void user_menu(int fdHd){
 
     close(fifo_fd);
 
-
-
-    while (option != 5){
-        printf("\n*--------------------------------*\n");
-        printf("1. Show the superblock info.\n");
-        printf("2. Create a file.\n");
-        printf("3. List all files and directories.\n");
-        printf("4. Show a file content.\n");
-        printf("5. LS.\n");
-        printf("6. EXIT.\n");
-        scanf("%d", &option);
-
-
-        switch (option){
-            case 1:
-                printf("Showing info.\n");
-                show_superblock(fdHd);
-                break;
-            case 2:
-                printf("Creating a dumb directory three.\n");
-                // * Proccess responsible for managing inode directories through the volatil memory, for fast access
-                pid_t manager_dir_mem = fork();
-                if (manager_dir_mem == 0){
-                    printf("------------------------\n");
-                    printf("PROCESSO FILHO\n");
-                    printf("------------------------\n");
-                    // * Creating dump data
-                    create_dump_directory_tree(fdHd, ReadBlock);
-                }  
-                printf("------------------------\n");
-                printf("PROCESSO PAI\n");
-                printf("------------------------\n");
-                // * Waiting for creation
-                waitpid(manager_dir_mem, NULL, 0);
-               
-                printf("shmid %d\n", shmid);
-
-                printf("Processo pai\n");
-                long int inode_number_2 = 0;
-                // * Catching inodes from hd of the current directory (in this case, is the root directory)
-                InodeNumberNameDir * father_addresses;
-                int arrSize = sizeof father_addresses / sizeof father_addresses[0];
-                // ! STATIC SIZE (for moment)
-                for (int i = 0; i < 64; i++) {
-                    if (father_addresses->inodeNumbers[i] == 0){
-                        break;
-                    }
-                    printf("~/%s (%ld)", father_addresses->dirNames[i], father_addresses->inodeNumbers[i] );
-                }
-                // * 
-                InodeNumberNameDir *sh_mem;
-                // * Attaching the shared memory to the process, to allow the operation of moving the data
-                if ((sh_mem = shmat (shmid, 0, 0)) == (InodeNumberNameDir*)-1){
-                        perror("acoplamento impossivel") ;
-                        exit (1) ;
-                    }
-                // * Moving the actual data from buffer to shared memory
-                memmove(sh_mem, father_addresses, sizeof(father_addresses)+1);
-
-
-                break;
-            case 3:
-                printf("Listing all files and directories.\n");
-                show_all_directories(fdHd, ReadBlock);
-                break;
-            case 4:
-                printf("Give me the inode number: \n");
-                long int inode_number = 0;
-                scanf("%ld", &inode_number);
-                read_inode(fdHd, ReadBlock, inode_number);
-                printf("Show data? (y/n)\n");
-                char show_data = 'n';
-                scanf(" %c", &show_data);
-                if (show_data == 'y'){
-                    printf("Showing a file content.\n");
-                    read_inode_data(fdHd, ReadBlock, inode_number);
-                }
-                break;
-            case 5:
-                // * LS Function
-                printf("ls");
-                InodeNumberNameDir *sh_mem_;
-
-                if ((sh_mem_ = shmat (shmid, 0, 0)) == (InodeNumberNameDir*)-1){
-                        perror("acoplamento impossivel") ;
-                        
-                }
-                printf("-----%ld",sh_mem_->inodeNumbers[0]);
-                printf("-----%ld",sh_mem_->inodeNumbers[1]);
-                printf("-----%ld",sh_mem_->inodeNumbers[2]);
-                printf("-----%ld",sh_mem_->inodeNumbers[3]);
-
-                printf("\n");
-
-
-                for (int i = 0; i < 64; i++) {
-                    if (father_addresses->inodeNumbers[i] == 0){
-                        break;
-                    }
-                    printf(" ~/%s (%ld)", father_addresses->dirNames[i], father_addresses->inodeNumbers[i] );
-                }
-                break;
-            
-            case 6:
-                // * Criar arquivo com dados de input
-                
-            case 7:
-                // shmdt(sh_mem);
-                shmctl(shmid, IPC_RMID, 0);
-
-                printf("Exiting.\n");
-                exit (1);
-                break;
-            default:
-                printf("Invalid option.\n");
-                break;
-        }
-        printf("\n*--------------------------------*\n");
-
-    }
 }
 
 

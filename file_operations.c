@@ -61,7 +61,7 @@ Directory* returnDirPhysicalLocation(int fdHd, struct SuperBlock ReadBlock, long
  * \brief Function that allocates a directory in memory, creating the structure based on the absolute path.
  * \param _name The directory's path, starting at /, last word will be taken as folder path.
  **/
-void allocate_dir_v2(int fdHd, struct SuperBlock ReadBlock, char *dir_name, char *file_name){
+void allocate_dir_v2(int fdHd, struct SuperBlock ReadBlock, char *dir_name, char *file_name, long int father_address){
     // * STEP 1 - Split the path into the directory name and the path itself.
     // * STEP 2 - Keep the reference to the father directory.
     // * STEP 3 - If father does not have first, then allocate the directory in the first.
@@ -78,7 +78,7 @@ void allocate_dir_v2(int fdHd, struct SuperBlock ReadBlock, char *dir_name, char
     char *nomeFormatado = (char *)malloc(sizeof(char) * strlen(dir_name));
 
     // * We have to iterate through the path, and make sure that this path exists and the folder does not.
-    long int thisDirAddress = 0;
+    long int thisDirAddress = father_address;
     long int beforeAddress = 0;
 
     // * Running into path splited by /
@@ -273,13 +273,19 @@ long int find_dir(int fdHd, struct SuperBlock ReadBlock, long int father_address
 InodeNumberNameDir * return_child_inodes(int inodeAddressFather,struct SuperBlock ReadBlock,int fdHd, InodeNumberNameDir * sh_mem){
     // ! Fixed Size 
     long int * inodesNumbers = (long int *)malloc(sizeof(long int) * 64);
+    long int * rootBlocks = (long int *)malloc(sizeof(long int) * 64);
     char * inodeNames[64];
-    // ! NAO ESQUECER O MAIS 1 SE NAO FOR O DIRETORIO PAI
-    long int father_address = ReadBlock.inode_directory_start + (ReadBlock.block_size * inodeAddressFather);
+    long int multiplyAddress = 0;
+    long int father_address = ReadBlock.inode_directory_start;
+    if (inodeAddressFather > 0){
+        father_address = ReadBlock.block_size * inodeAddressFather + 1;
+    }
+
+    printf("\nDirectory Father ID: %d \n", inodeAddressFather);
+    printf("\nDirectory Father ADDRESS: %d \n", father_address);
     struct directory *directory_instance = (struct directory *)malloc(ReadBlock.block_size);
     lseek(fdHd, father_address, SEEK_SET);
     read(fdHd, directory_instance, ReadBlock.block_size);
-    printf("\nDirectory Father: %s \n", directory_instance->name);
 
     long int child_address = directory_instance->first_int;
     printf("child_address: %ld\n", child_address);
@@ -292,6 +298,7 @@ InodeNumberNameDir * return_child_inodes(int inodeAddressFather,struct SuperBloc
 
     if (child_address != 0){
         struct directory *child_instance = (struct directory *)malloc(ReadBlock.block_size);
+        rootBlocks[contador] = child_address;
         lseek(fdHd, child_address * ReadBlock.block_size + 1, SEEK_SET);
         read(fdHd, child_instance, ReadBlock.block_size);
         inodesNumbers[contador] = child_instance->inode;
@@ -300,49 +307,24 @@ InodeNumberNameDir * return_child_inodes(int inodeAddressFather,struct SuperBloc
             {
                 contador++;
                 child_address = child_instance->next_int;
+                rootBlocks[contador] = child_address;
                 lseek(fdHd, child_instance->next_int * ReadBlock.block_size + 1, SEEK_SET);
                 read(fdHd, child_instance, ReadBlock.block_size);
                 inodesNumbers[contador] = child_instance->inode;
                 inodeNames[contador]=strdup(child_instance->name);
             }
-        printf("contador: %d\n", contador);
 
         for (size_t i = 0; i < contador+1; i++)
         {
 
-            printf("fooooooooooooooooooooooooooor\n");
-            printf("********Nome: %s\n", inodeNames[i]);
-            printf("********inodesNumbers: %d\n", inodesNumbers[i]);
+            printf("*Nome: %s\n", inodeNames[i]);
+            printf("*inodesNumbers: %d\n", inodesNumbers[i]);
             // inodeSet->dirNames[i] = strdup(inodeNames[i]);
-            inodeSet->inodeNumbers[i] = 322;
+            inodeSet->inodeNumbers[i] = inodesNumbers[i];
+            inodeSet->rootBlocks[i] = rootBlocks[i];
             snprintf(inodeSet->dirNames[i], sizeof(inodeNames[i]), inodeNames[i], i);
-            printf("********inodeSet: %s\n", inodeSet->dirNames[i]);
-            printf("********inodesNumbers2: %d\n", inodeSet->inodeNumbers[i]);
+            printf("*inodeSet: %s\n", inodeSet->dirNames[i]);
         }
-
-
-    // printf("********inodeSet[0]: %s\n", inodeSet->dirNames[0]);
-    // InodeNumberNameDir *sh_mem = (struct InodeNumberNameDir *) shmat(shmid, NULL, 0);
-    // * Attaching the shared memory to the process, to allow the operation of moving the data
-    // if ((sh_mem = shmat (shmid, 0, 0)) == (void *)-1){
-    //     perror("acoplamento impossivel") ;
-    //     exit (1) ;
-    // }
-    // * Moving the actual data from buffer to shared memory
-    // if ((sh_mem = (struct InodeNumberNameDir *)shmat(shmid, NULL, 0)) == (void *)-1) {
-    //         perror("shmat failed");
-    //         exit(1);
-    //     }
-
-    // for (int i = 0; i < contador+1; i++) {
-    //     sh_mem->dirNames[i] = "ALO";
-    //     sh_mem->inodeNumbers[i] = inodeSet->inodeNumbers[i];
-    //     // Copy other members if needed...
-    // }
-    
-    // memmove(sh_mem, &inodeSet, sizeof(struct InodeNumberNameDir));
-    // printf("********sh_mem[0]: %s\n", sh_mem->dirNames[0]);
-    //shmdt(sh_mem);
 
     }
 
@@ -681,15 +663,15 @@ void read_block(int fdHd, struct SuperBlock ReadBlock, long int block_address, l
  */
 void create_dump_directory_tree(int fdHd, struct SuperBlock ReadBlock){
 
-    allocate_dir_v2(fdHd, ReadBlock, "/pasta1","inputTest.txt");
-    allocate_dir_v2(fdHd, ReadBlock, "/pasta1/pasta1.1","");
-    allocate_dir_v2(fdHd, ReadBlock, "/pasta1/pasta1.2","");
-    allocate_dir_v2(fdHd, ReadBlock, "/pasta1/pasta1.1/pasta1.1.1","");
-    allocate_dir_v2(fdHd, ReadBlock, "/pasta2","inputTest2.txt");
-    allocate_dir_v2(fdHd, ReadBlock, "/pasta2/pasta2.1","");
-    allocate_dir_v2(fdHd, ReadBlock, "/pasta3","");
-    allocate_dir_v2(fdHd, ReadBlock, "/pasta4","");
-    allocate_dir_v2(fdHd, ReadBlock, "/pasta5","");
+    allocate_dir_v2(fdHd, ReadBlock, "/pasta1","inputTest.txt", 0);
+    allocate_dir_v2(fdHd, ReadBlock, "/pasta1/pasta1.1","", 0);
+    allocate_dir_v2(fdHd, ReadBlock, "/pasta1/pasta1.2","", 0);
+    allocate_dir_v2(fdHd, ReadBlock, "/pasta1/pasta1.1/pasta1.1.1","", 0);
+    allocate_dir_v2(fdHd, ReadBlock, "/pasta2","inputTest2.txt", 0);
+    allocate_dir_v2(fdHd, ReadBlock, "/pasta2/pasta2.1","", 0);
+    allocate_dir_v2(fdHd, ReadBlock, "/pasta3","", 0);
+    allocate_dir_v2(fdHd, ReadBlock, "/pasta4","", 0);
+    allocate_dir_v2(fdHd, ReadBlock, "/pasta5","", 0);
     // show_all_directories(fdHd, ReadBlock);
     // read_inode(fdHd, ReadBlock, 2);
     // read_inode(fdHd, ReadBlock, 3);
